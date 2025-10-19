@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 训练产生的大文件
+*.pt
+*.pth
+*.ckpt
+
+# 数据文件（太大）
+*.csv
+*.npy
+
+# 大量图片文件夹（可选择性上传部分）
+reconstruction_sample_*/
+final_reconstruction_*/
+latents/
+latents_unique/
+
+# 日志
+*.log
+training_log.txt
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 系统文件
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# 数据集（太大，不上传）
+embryo_dataset/
+dataset/
+data/
+
+# matplotlib缓存
+.matplotlib/
+
