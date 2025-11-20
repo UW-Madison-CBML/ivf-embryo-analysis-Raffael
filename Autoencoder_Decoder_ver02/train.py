@@ -15,6 +15,12 @@ from tqdm import tqdm
 import json
 from datetime import datetime
 
+# Import build_index for automatic index.csv generation
+try:
+    import build_index
+except ImportError:
+    build_index = None
+
 # Add current directory and parent directories to path to find dataset_ivf
 # Try multiple possible locations (current directory first!)
 possible_paths = [
@@ -303,8 +309,27 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
+    # Ensure index.csv exists, build it if missing
+    index_path = Path(args.index_csv)
+    if not index_path.exists():
+        print(f"index.csv not found at {index_path}, building it with build_index.py...")
+        if build_index is None:
+            raise ImportError("build_index module not found. Please ensure build_index.py is in the same directory.")
+        try:
+            build_index.main()
+            if not index_path.exists():
+                raise FileNotFoundError(
+                    f"build_index.py executed but index.csv still not found at {index_path}. "
+                    "Please check if data/ directory is correctly linked to /project/bhaskar_group/ivf"
+                )
+            print(f"✓ Successfully created {index_path}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to build index.csv: {e}")
+    else:
+        print(f"✓ Found existing index.csv at {index_path}")
+    
     train(
-        index_csv=args.index_csv,
+        index_csv=str(index_path),
         batch_size=args.batch_size,
         seq_len=args.seq_len,
         num_epochs=args.num_epochs,
