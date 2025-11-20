@@ -18,8 +18,22 @@ echo "Installing dependencies..."
 PYDEPS="$PWD/pydeps"
 mkdir -p "$PYDEPS"
 python3 -m pip install --no-cache-dir --upgrade pip || echo "Warning: pip upgrade failed"
-python3 -m pip install --no-cache-dir opencv-python pandas numpy tqdm scikit-learn matplotlib ripser persim -t "$PYDEPS" || echo "Warning: Some packages failed to install"
+
+# Install all required packages (PyTorch should already be in container)
+# Note: Removed opencv-python, using Pillow instead
+python3 -m pip install --no-cache-dir \
+    pillow \
+    pandas \
+    numpy \
+    tqdm \
+    scikit-learn \
+    matplotlib \
+    ripser \
+    persim \
+    -t "$PYDEPS" || echo "Warning: Some packages failed to install"
+
 export PYTHONPATH="$PYDEPS:$PWD:$PYTHONPATH"
+echo "Dependencies installed. PYTHONPATH: $PYTHONPATH"
 
 # Build index if needed
 if [ ! -f index.csv ]; then
