@@ -90,22 +90,33 @@ def train(
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
     
-    # ★ Ensure index.csv exists before loading dataset ★
+    # ★ Force (re)build index.csv and print debug info ★
+    print(f"[train] FORCE (re)building {index_csv} with build_index.main() ...", flush=True)
+    if build_index is None:
+        raise ImportError(
+            "[train] build_index module not available. "
+            "Cannot auto-generate index.csv. Please ensure build_index.py is present."
+        )
+    
+    # Print current directory and files before build_index
+    cwd = Path.cwd()
+    print(f"[train] CWD before build_index: {cwd}", flush=True)
+    print(f"[train] Files in CWD before build_index: {[p.name for p in cwd.iterdir()]}", flush=True)
+    
+    # Call build_index.main()
+    build_index.main()
+    
     index_path = Path(index_csv)
-    if not index_path.exists():
-        print(f"[train] {index_csv} not found, building with build_index.py ...", flush=True)
-        if build_index is None:
-            raise ImportError(
-                f"[train] build_index module not available. "
-                "Cannot auto-generate index.csv. Please run build_index.py manually."
-            )
-        build_index.main()
-        if not index_path.exists():
-            raise FileNotFoundError(
-                f"[train] After running build_index.main(), still no {index_csv}. "
-                "Check that symlink 'data' -> /project/bhaskar_group/ivf has valid content."
-            )
-        print(f"[train] ✓ Successfully created {index_csv}", flush=True)
+    print(f"[train] After build_index.main(), index exists? {index_path.exists()}", flush=True)
+    if index_path.exists():
+        print(f"[train] ✓ index.csv full path: {index_path.resolve()}", flush=True)
+    else:
+        print(f"[train] ✗ index.csv NOT FOUND in {cwd}", flush=True)
+        raise FileNotFoundError(
+            f"[train] After running build_index.main(), still no {index_csv}. "
+            "Check that symlink 'data' -> /project/bhaskar_group/ivf has valid content and that "
+            "build_index.py writes OUT_CSV='index.csv' into the current working directory."
+        )
     
     # Dataset
     print("Loading dataset...")
