@@ -5,9 +5,31 @@
 # Don't exit on error
 set +e
 
-# Use shared dataset
-echo "Linking dataset..."
-ln -sfn /project/bhaskar_group/ivf data || echo "Warning: Could not link dataset"
+# Use shared dataset - CRITICAL: Must succeed!
+echo "=== Linking dataset ==="
+echo "Creating symlink: data -> /project/bhaskar_group/ivf"
+ln -sfn /project/bhaskar_group/ivf data
+
+# Verify symlink was created and target exists
+if [ ! -e "data" ]; then
+    echo "✗ ERROR: Failed to create 'data' symlink!"
+    echo "Current directory: $(pwd)"
+    echo "Files in current directory:"
+    ls -la
+    echo "Checking if target exists:"
+    ls -ld /project/bhaskar_group/ivf 2>&1 || echo "Target /project/bhaskar_group/ivf does not exist!"
+    exit 1
+fi
+
+if [ ! -d "data" ]; then
+    echo "✗ ERROR: 'data' exists but is not a directory!"
+    ls -la data
+    exit 1
+fi
+
+echo "✓ Dataset symlink created successfully"
+echo "Data directory contents (first 5 items):"
+ls -1 data | head -5 || echo "Cannot list data directory"
 
 # Add current directory to PYTHONPATH FIRST (so train.py can find dataset_ivf.py)
 export PYTHONPATH="$PWD:$PYTHONPATH"

@@ -103,6 +103,31 @@ def train(
     print(f"[train] CWD before build_index: {cwd}", flush=True)
     print(f"[train] Files in CWD before build_index: {[p.name for p in cwd.iterdir()]}", flush=True)
     
+    # CRITICAL: Check if 'data' directory exists
+    data_dir = Path("data")
+    print(f"[train] Checking 'data' directory: exists={data_dir.exists()}, is_dir={data_dir.is_dir()}", flush=True)
+    if not data_dir.exists():
+        print(f"[train] ✗ ERROR: 'data' directory does not exist!", flush=True)
+        print(f"[train] Expected symlink: data -> /project/bhaskar_group/ivf", flush=True)
+        print(f"[train] This should have been created by run_train.sh", flush=True)
+        raise FileNotFoundError(
+            f"[train] 'data' directory not found in {cwd}. "
+            "run_train.sh should create a symlink: ln -sfn /project/bhaskar_group/ivf data"
+        )
+    if not data_dir.is_dir():
+        print(f"[train] ✗ ERROR: 'data' exists but is not a directory!", flush=True)
+        print(f"[train] 'data' is: {data_dir.stat()}", flush=True)
+        raise NotADirectoryError(f"[train] 'data' is not a directory: {data_dir}")
+    
+    # Check if data directory has content
+    try:
+        data_contents = list(data_dir.iterdir())
+        print(f"[train] ✓ 'data' directory found with {len(data_contents)} items (showing first 5)", flush=True)
+        for item in data_contents[:5]:
+            print(f"[train]   - {item.name}", flush=True)
+    except Exception as e:
+        print(f"[train] ⚠ Warning: Cannot list 'data' directory contents: {e}", flush=True)
+    
     # Call build_index.main()
     build_index.main()
     
