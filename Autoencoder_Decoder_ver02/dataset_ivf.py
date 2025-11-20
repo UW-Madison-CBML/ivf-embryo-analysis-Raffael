@@ -1,6 +1,6 @@
 # dataset_ivf.py
 # PyTorch Dataset for IVF embryo timelapse sequences
-import cv2
+from PIL import Image
 import numpy as np
 import pandas as pd
 import torch
@@ -23,14 +23,16 @@ class IVFSequenceDataset(Dataset):
         self.norm = norm
 
     def _read_gray(self, path):
-        """Read and preprocess a single grayscale image"""
-        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-        if img is None: 
-            raise FileNotFoundError(f"Could not read image: {path}")
-        img = cv2.resize(img, (self.resize, self.resize), interpolation=cv2.INTER_AREA)
-        # Light denoising (optional)
-        img = cv2.GaussianBlur(img, (3, 3), 1.0)
-        return img.astype(np.float32)
+        """Read and preprocess a single grayscale image using Pillow"""
+        try:
+            img = Image.open(path).convert("L")  # Convert to grayscale
+            img = img.resize((self.resize, self.resize), Image.BILINEAR)
+            arr = np.array(img, dtype=np.float32)
+            # Light denoising using simple box filter (alternative to GaussianBlur)
+            # For simplicity, we skip denoising here - can add if needed
+            return arr
+        except Exception as e:
+            raise FileNotFoundError(f"Could not read image: {path}, error: {e}")
 
     def _normalize_video(self, vol):  # vol: [T, H, W]
         """Normalize video sequence per-sequence"""
