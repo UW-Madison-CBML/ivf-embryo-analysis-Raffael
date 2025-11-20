@@ -1,48 +1,36 @@
-#!/bin/bash
-# Training wrapper script for CHTC
-# Uses shared dataset and new ConvLSTM Autoencoder model
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Don't exit on error
-set +e
+echo "=== [run_train.sh] Starting job ==="
+echo "CWD: $(pwd)"
+echo "Contents in CWD:"
+ls
 
-# Use shared dataset - CRITICAL: Must succeed!
-echo "=== Linking dataset ==="
-echo "Creating symlink: data -> /project/bhaskar_group/ivf"
-ln -sfn /project/bhaskar_group/ivf data
-
-# Verify symlink was created and target exists
-if [ ! -e "data" ]; then
-    echo "✗ ERROR: Failed to create 'data' symlink!"
-    echo "Current directory: $(pwd)"
-    echo "Files in current directory:"
-    ls -la
-    echo "Checking if target exists:"
-    ls -ld /project/bhaskar_group/ivf 2>&1 || echo "Target /project/bhaskar_group/ivf does not exist!"
-    exit 1
+# Ensure data symlink points to project (only available on GPU node)
+if [ ! -L data ]; then
+  echo "[run_train] Creating data symlink -> /project/bhaskar_group/ivf"
+  ln -s /project/bhaskar_group/ivf data
 fi
+echo "[run_train] data symlink:"
+ls -ld data || echo "data symlink missing"
 
-if [ ! -d "data" ]; then
-    echo "✗ ERROR: 'data' exists but is not a directory!"
-    ls -la data
-    exit 1
-fi
+# Build index.csv on GPU node
+echo "[run_train] Building index.csv on GPU node..."
+python -u build_index.py
 
-echo "✓ Dataset symlink created successfully"
-echo "Data directory contents (first 5 items):"
-ls -1 data | head -5 || echo "Cannot list data directory"
+echo "[run_train] After build_index, check index.csv:"
+ls -lh index.csv || { echo "✗ index.csv NOT FOUND after build_index.py"; exit 1; }
 
-# Add current directory to PYTHONPATH FIRST (so train.py can find dataset_ivf.py)
+# Set PYTHONPATH
 export PYTHONPATH="$PWD:$PYTHONPATH"
-echo "PYTHONPATH set to: $PYTHONPATH"
 
 # Install dependencies into local directory (container may not have all packages)
-echo "Installing dependencies..."
+echo "[run_train] Installing dependencies..."
 PYDEPS="$PWD/pydeps"
 mkdir -p "$PYDEPS"
 python3 -m pip install --no-cache-dir --upgrade pip || echo "Warning: pip upgrade failed"
 
 # Install all required packages (PyTorch should already be in container)
-# Note: Removed opencv-python, using Pillow instead
 python3 -m pip install --no-cache-dir \
     pillow \
     pandas \
@@ -54,41 +42,17 @@ python3 -m pip install --no-cache-dir \
     persim \
     -t "$PYDEPS" || echo "Warning: Some packages failed to install"
 
-export PYTHONPATH="$PYDEPS:$PWD:$PYTHONPATH"
-echo "Dependencies installed. PYTHONPATH: $PYTHONPATH"
+export PYTHONPATH="$PYDEPS:$PYTHONPATH"
 
-# Build index if needed
-if [ ! -f index.csv ]; then
-    echo "Building index.csv..."
-    if [ -f "build_index.py" ]; then
-        python3 build_index.py || echo "Index build failed, continuing..."
-    else
-        echo "build_index.py not found, will try to continue without index.csv"
-    fi
-fi
-
-# Verify dataset_ivf.py exists
-echo "=== Checking for dataset_ivf.py ==="
-if [ -f "dataset_ivf.py" ]; then
-    echo "✓ dataset_ivf.py found in current directory"
-else
-    echo "⚠ ERROR: dataset_ivf.py not found!"
-    ls -la *.py 2>/dev/null || echo "No .py files found"
-fi
-
-# Test import
-echo "=== Testing dataset_ivf import ==="
-python3 -c "import sys; sys.path.insert(0, '.'); from dataset_ivf import IVFSequenceDataset; print('✓ Successfully imported dataset_ivf')" || echo "⚠ Import test failed!"
-
-# Run training
-echo "Starting training..."
-python3 train.py \
+# Start training
+echo "[run_train] Starting training..."
+python -u train.py \
     --index_csv index.csv \
     --batch_size 8 \
     --seq_len 20 \
     --num_epochs 50 \
     --learning_rate 3e-4 \
     --save_dir checkpoints \
-    --log_dir logs || echo "Training failed!"
+    --log_dir logs
 
-echo "Training script completed!"
+echo "=== [run_train.sh] Training finished ==="

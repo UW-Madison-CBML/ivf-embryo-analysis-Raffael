@@ -15,12 +15,6 @@ from tqdm import tqdm
 import json
 from datetime import datetime
 
-# Import build_index for automatic index.csv generation
-try:
-    import build_index
-except ImportError:
-    build_index = None
-
 # Add current directory and parent directories to path to find dataset_ivf
 # Try multiple possible locations (current directory first!)
 possible_paths = [
@@ -89,59 +83,6 @@ def train(
     # Create directories
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
-    
-    # ★ Force (re)build index.csv and print debug info ★
-    print(f"[train] FORCE (re)building {index_csv} with build_index.main() ...", flush=True)
-    if build_index is None:
-        raise ImportError(
-            "[train] build_index module not available. "
-            "Cannot auto-generate index.csv. Please ensure build_index.py is present."
-        )
-    
-    # Print current directory and files before build_index
-    cwd = Path.cwd()
-    print(f"[train] CWD before build_index: {cwd}", flush=True)
-    print(f"[train] Files in CWD before build_index: {[p.name for p in cwd.iterdir()]}", flush=True)
-    
-    # CRITICAL: Check if 'data' directory exists
-    data_dir = Path("data")
-    print(f"[train] Checking 'data' directory: exists={data_dir.exists()}, is_dir={data_dir.is_dir()}", flush=True)
-    if not data_dir.exists():
-        print(f"[train] ✗ ERROR: 'data' directory does not exist!", flush=True)
-        print(f"[train] Expected symlink: data -> /project/bhaskar_group/ivf", flush=True)
-        print(f"[train] This should have been created by run_train.sh", flush=True)
-        raise FileNotFoundError(
-            f"[train] 'data' directory not found in {cwd}. "
-            "run_train.sh should create a symlink: ln -sfn /project/bhaskar_group/ivf data"
-        )
-    if not data_dir.is_dir():
-        print(f"[train] ✗ ERROR: 'data' exists but is not a directory!", flush=True)
-        print(f"[train] 'data' is: {data_dir.stat()}", flush=True)
-        raise NotADirectoryError(f"[train] 'data' is not a directory: {data_dir}")
-    
-    # Check if data directory has content
-    try:
-        data_contents = list(data_dir.iterdir())
-        print(f"[train] ✓ 'data' directory found with {len(data_contents)} items (showing first 5)", flush=True)
-        for item in data_contents[:5]:
-            print(f"[train]   - {item.name}", flush=True)
-    except Exception as e:
-        print(f"[train] ⚠ Warning: Cannot list 'data' directory contents: {e}", flush=True)
-    
-    # Call build_index.main()
-    build_index.main()
-    
-    index_path = Path(index_csv)
-    print(f"[train] After build_index.main(), index exists? {index_path.exists()}", flush=True)
-    if index_path.exists():
-        print(f"[train] ✓ index.csv full path: {index_path.resolve()}", flush=True)
-    else:
-        print(f"[train] ✗ index.csv NOT FOUND in {cwd}", flush=True)
-        raise FileNotFoundError(
-            f"[train] After running build_index.main(), still no {index_csv}. "
-            "Check that symlink 'data' -> /project/bhaskar_group/ivf has valid content and that "
-            "build_index.py writes OUT_CSV='index.csv' into the current working directory."
-        )
     
     # Dataset
     print("Loading dataset...")
@@ -362,27 +303,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Ensure index.csv exists, build it if missing
-    index_path = Path(args.index_csv)
-    if not index_path.exists():
-        print(f"index.csv not found at {index_path}, building it with build_index.py...")
-        if build_index is None:
-            raise ImportError("build_index module not found. Please ensure build_index.py is in the same directory.")
-        try:
-            build_index.main()
-            if not index_path.exists():
-                raise FileNotFoundError(
-                    f"build_index.py executed but index.csv still not found at {index_path}. "
-                    "Please check if data/ directory is correctly linked to /project/bhaskar_group/ivf"
-                )
-            print(f"✓ Successfully created {index_path}")
-        except Exception as e:
-            raise RuntimeError(f"Failed to build index.csv: {e}")
-    else:
-        print(f"✓ Found existing index.csv at {index_path}")
-    
     train(
-        index_csv=str(index_path),
+        index_csv=args.index_csv,
         batch_size=args.batch_size,
         seq_len=args.seq_len,
         num_epochs=args.num_epochs,
