@@ -1,0 +1,79 @@
+========================================
+從零開始：CHTC 訓練完整流程
+========================================
+
+【步驟 1】SSH 到 CHTC
+-------------------
+在你的 Mac 終端執行：
+ssh rho9@ap2001.chtc.wisc.edu
+
+輸入密碼和 Duo 驗證碼
+
+
+【步驟 2】Clone Repository
+-------------------
+cd ~
+git clone https://github.com/UW-Madison-CBML/ivf.git
+cd ivf/Raffael/2025-11-19
+
+
+【步驟 3】確認文件
+-------------------
+ls -lh
+
+應該看到：
+- conv_lstm.py
+- model.py
+- losses.py
+- train.py
+- run_train.sh
+- train_h200_lab.sub
+
+
+【步驟 4】設置權限
+-------------------
+chmod +x run_train.sh
+mkdir -p logs
+
+
+【步驟 5】提交訓練任務
+-------------------
+condor_submit train_h200_lab.sub
+
+
+【步驟 6】查看狀態
+-------------------
+condor_q
+
+記下 job ID（例如：2609123.0）
+
+
+【步驟 7】監控訓練
+-------------------
+# 查看實時輸出（替換 <cluster.proc> 為實際 job ID）
+condor_tail <cluster.proc>
+
+# 查看錯誤
+condor_tail -stderr <cluster.proc>
+
+
+【步驟 8】檢查結果（訓練完成後）
+-------------------
+# 結果保存在 staging
+ls -lh /staging/groups/bhaskar_group/ivf/results/
+
+
+========================================
+快速一鍵執行（複製全部）
+========================================
+
+cd ~ && \
+git clone https://github.com/UW-Madison-CBML/ivf.git && \
+cd ivf/Raffael/2025-11-19 && \
+chmod +x run_train.sh && \
+mkdir -p logs && \
+condor_submit train_h200_lab.sub && \
+condor_q
+
+========================================
+

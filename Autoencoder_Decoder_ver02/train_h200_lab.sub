@@ -1,0 +1,49 @@
+# CHTC H200 Training Submit File
+# For ConvLSTM Autoencoder in Raffael/2025-11-19/
+
+executable = /bin/bash
+arguments  = -c "touch results.tgz && (tar -czf results.tgz -T /dev/null 2>/dev/null || (echo 'empty' > empty.txt && tar -czf results.tgz empty.txt && rm -f empty.txt)) && chmod 644 results.tgz && ./run_train.sh"
+
+log    = logs/train_$(Cluster)_$(Process).log
+output = logs/train_$(Cluster)_$(Process).out
+error  = logs/train_$(Cluster)_$(Process).err
+
+# Transfer necessary files
+transfer_input_files = \
+    run_train.sh, \
+    train.py, \
+    model.py, \
+    conv_lstm.py, \
+    losses.py, \
+    dataset_ivf.py, \
+    build_index.py
+
+# Lab-specific hints (CRITICAL for GPU access)
++WantGPULab = true
++GPUJobLength = "short"
+gpus_minimum_capability = 7.0
+
+# Lab/Project identification (Bhaskar lab)
++ProjectName = "UWMadison_BME_Bhaskar"
+# Uncomment if AccountingGroup is required:
+# +AccountingGroup = "group_bhaskar.rho9"
+
+# Container with PyTorch + CUDA
++SingularityImage = "docker://pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime"
+
+request_gpus   = 1
+request_cpus   = 2
+request_memory = 16GB
+request_disk   = 30GB
+
+# H200 only
+Requirements = regexp("H200", TARGET.CUDADeviceName)
+
+# File transfer settings
+should_transfer_files   = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+# Results will be saved in checkpoints/ and logs/ directories in the job's working directory
+# No output file transfer - results will remain on execution node or can be retrieved manually
+
+queue 1
+

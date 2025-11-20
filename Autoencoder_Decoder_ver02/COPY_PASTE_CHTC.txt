@@ -1,0 +1,36 @@
+========================================
+COPY AND PASTE THESE COMMANDS INTO CHTC
+========================================
+
+# 1. Clone repository
+cd ~
+git clone https://github.com/UW-Madison-CBML/ivf.git
+cd ivf/Raffael/2025-11-19
+
+# 2. Verify files are present
+ls -lh
+
+# 3. Make scripts executable
+chmod +x run_train.sh
+mkdir -p logs
+
+# 4. Submit training job
+condor_submit train_h200_lab.sub
+
+# 5. Monitor job
+condor_q
+
+# 6. View live output (replace <cluster.proc> with actual job ID from condor_q)
+condor_tail <cluster.proc>
+
+# 7. After completion, check results
+ls -lh /staging/groups/bhaskar_group/ivf/results/
+
+========================================
+QUICK ONE-LINER (if repository already exists)
+========================================
+
+cd ~/ivf/Raffael/2025-11-19 && chmod +x run_train.sh && mkdir -p logs && condor_submit train_h200_lab.sub && condor_q
+
+========================================
+

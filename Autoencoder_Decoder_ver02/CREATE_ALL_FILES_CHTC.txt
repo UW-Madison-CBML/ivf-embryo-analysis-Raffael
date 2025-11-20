@@ -1,0 +1,73 @@
+========================================
+在 CHTC 上創建所有文件
+========================================
+
+由於 GitHub 下載和 SSH 上傳都有問題，直接在 CHTC 上創建文件。
+
+步驟 1: 創建 train_h200_lab.sub
+----------------------------------------
+cd ~/ivf_train
+
+cat > train_h200_lab.sub << 'EOF'
+executable = run_train.sh
+arguments  =
+
+log    = logs/train_$(Cluster)_$(Process).log
+output = logs/train_$(Cluster)_$(Process).out
+error  = logs/train_$(Cluster)_$(Process).err
+
+transfer_input_files = run_train.sh, train.py, model.py, conv_lstm.py, losses.py
+
++WantGPULab = true
++GPUJobLength = "short"
+gpus_minimum_capability = 7.0
+
++ProjectName = "UWMadison_BME_Bhaskar"
+
++SingularityImage = "docker://pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime"
+
+request_gpus   = 1
+request_cpus   = 2
+request_memory = 16GB
+request_disk   = 30GB
+
+Requirements = regexp("H200", TARGET.CUDADeviceName)
+
+should_transfer_files   = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+transfer_output_files   = results.tgz
+transfer_output_remaps  = "results.tgz = file:///staging/groups/bhaskar_group/ivf/results/results_$(Cluster)_$(Process).tgz;"
+
+queue 1
+EOF
+
+步驟 2: 從 GitHub 重新下載（使用正確的方法）
+----------------------------------------
+# 先刪除損壞的文件
+rm -f train.py model.py conv_lstm.py losses.py
+
+# 使用 wget 或 curl 重新下載
+BASE="https://raw.githubusercontent.com/UW-Madison-CBML/ivf/main/Raffael/2025-11-19"
+
+wget -O train.py "${BASE}/train.py" || curl -L -o train.py "${BASE}/train.py"
+wget -O model.py "${BASE}/model.py" || curl -L -o model.py "${BASE}/model.py"
+wget -O conv_lstm.py "${BASE}/conv_lstm.py" || curl -L -o conv_lstm.py "${BASE}/conv_lstm.py"
+wget -O losses.py "${BASE}/losses.py" || curl -L -o losses.py "${BASE}/losses.py"
+
+# 驗證文件大小
+ls -lh train.py model.py conv_lstm.py losses.py
+
+步驟 3: 如果下載還是失敗，使用簡單版本
+----------------------------------------
+# 創建最小可用的 train.py（只包含基本結構）
+# 然後再逐步添加功能
+
+步驟 4: 提交
+----------------------------------------
+chmod +x run_train.sh
+mkdir -p logs
+condor_submit train_h200_lab.sub
+condor_q
+
+========================================
+

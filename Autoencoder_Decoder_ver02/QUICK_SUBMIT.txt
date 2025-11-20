@@ -1,0 +1,48 @@
+========================================
+快速提交訓練任務
+========================================
+
+在 CHTC 上執行以下命令：
+
+# 方法 1: 使用提交腳本（推薦）
+bash SUBMIT_TRAINING.sh
+
+# 方法 2: 手動提交
+chmod +x run_train.sh
+mkdir -p logs
+condor_submit train_h200_lab.sub
+condor_q
+
+# 方法 3: 一鍵執行
+chmod +x run_train.sh && mkdir -p logs && condor_submit train_h200_lab.sub && condor_q
+
+========================================
+提交前檢查
+========================================
+
+確保以下文件存在：
+- train.py
+- model.py
+- conv_lstm.py
+- losses.py
+- run_train.sh
+- train_h200_lab.sub
+
+檢查命令：
+ls -lh train.py model.py conv_lstm.py losses.py run_train.sh train_h200_lab.sub
+
+========================================
+提交後監控
+========================================
+
+# 查看狀態
+condor_q
+
+# 查看實時輸出（替換 <job_id> 為實際 ID）
+condor_tail <job_id>
+
+# 查看錯誤
+condor_tail -stderr <job_id>
+
+========================================
+
