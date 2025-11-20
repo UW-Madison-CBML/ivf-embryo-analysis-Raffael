@@ -90,6 +90,23 @@ def train(
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
     
+    # ★ Ensure index.csv exists before loading dataset ★
+    index_path = Path(index_csv)
+    if not index_path.exists():
+        print(f"[train] {index_csv} not found, building with build_index.py ...", flush=True)
+        if build_index is None:
+            raise ImportError(
+                f"[train] build_index module not available. "
+                "Cannot auto-generate index.csv. Please run build_index.py manually."
+            )
+        build_index.main()
+        if not index_path.exists():
+            raise FileNotFoundError(
+                f"[train] After running build_index.main(), still no {index_csv}. "
+                "Check that symlink 'data' -> /project/bhaskar_group/ivf has valid content."
+            )
+        print(f"[train] ✓ Successfully created {index_csv}", flush=True)
+    
     # Dataset
     print("Loading dataset...")
     train_dataset = IVFSequenceDataset(index_csv, resize=128, norm="minmax01")
